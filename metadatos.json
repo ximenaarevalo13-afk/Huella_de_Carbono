@@ -1,0 +1,40 @@
+{
+  "modelo": "GradientBoostingRegressor",
+  "hiperparametros": {
+    "n_estimators": 100,
+    "learning_rate": 0.05,
+    "max_depth": 2,
+    "min_samples_leaf": 2,
+    "random_state": 42
+  },
+  "variables_categoricas": [
+    "Clase",
+    "Marca",
+    "Linea",
+    "TIPO_CAJA"
+  ],
+  "variables_numericas": [
+    "CILINDRAJE_CM3",
+    "POTENCIA_HP",
+    "PESO_KG",
+    "anio",
+    "mes",
+    "gasto_mant_rep",
+    "n_eventos_mant_rep",
+    "km_mes",
+    "antiguedad",
+    "temp_prom",
+    "humedad_prom"
+  ],
+  "variable_objetivo": "kg_co2e",
+  "metricas_split_80_20": {
+    "mae_test": 117.73135741890789,
+    "rmse_test": 154.2332653749163,
+    "r2_test": 0.3424756902032762,
+    "r2_train": 0.4371660892753477
+  },
+  "vehiculo_mayor_huella": "VEH_2D5T43TE",
+  "n_filas_entrenamiento": 840,
+  "version_scikit_learn": "1.9.1",
+  "fecha_entrenamiento": "2026-11-16"
+}
