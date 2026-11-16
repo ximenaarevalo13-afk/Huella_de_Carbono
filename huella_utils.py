@@ -83,6 +83,18 @@ PERFILES = {
     },
 }
 
+# Imágenes opcionales: se suben al repositorio con estos nombres (cualquier extensión)
+LOGO = "logo_positiva"
+FOTOS = {
+    "VERSA": "foto_versa",
+    "TIIDA": "foto_tiida",
+    "D22/NP300": "foto_d22_np300",
+    "OPTIMA": "foto_optima",
+}
+EXTENSIONES_IMG = (".png", ".jpg", ".jpeg", ".webp", ".svg")
+MIME_IMG = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".webp": "image/webp", ".svg": "image/svg+xml"}
+
 # Columnas que debe traer un archivo para cálculo por lotes
 COLUMNAS_USUARIO = [
     "anio", "mes", "km_mes", "antiguedad",
@@ -254,3 +266,20 @@ def ranking_flota(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         .reset_index(drop=True)
     )
     return ranking, d
+
+
+# --------------------------------------------------------------------------
+# Imágenes (logo y fotos de vehículos) - opcionales
+# --------------------------------------------------------------------------
+def buscar_imagen(nombre_base: str) -> Path | None:
+    """
+    Busca <nombre_base>.(png|jpg|jpeg|webp|svg) en la raíz o en 'imagenes/',
+    sin distinguir mayúsculas. Devuelve None si no existe (la app sigue funcionando).
+    """
+    for carpeta in (BASE, BASE / "imagenes"):
+        if not carpeta.is_dir():
+            continue
+        for archivo in sorted(carpeta.iterdir()):
+            if archivo.stem.lower() == nombre_base and archivo.suffix.lower() in EXTENSIONES_IMG:
+                return archivo
+    return None
