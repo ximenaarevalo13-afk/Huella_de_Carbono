@@ -4,6 +4,7 @@ Huella de carbono de la flota de vehículos de Positiva - App Streamlit.
 Proyecto de Machine Learning Probabilístico (CRISP-DM, fase Despliegue).
 Ejecutar:  streamlit run app.py
 """
+import base64
 import io
 
 import matplotlib.pyplot as plt
@@ -13,13 +14,59 @@ import streamlit as st
 
 import huella_utils as hu
 
-VERDE, NARANJA, GRIS = "#1F4529", "#FF7A00", "#8A948E"
+# Colores corporativos de Positiva
+NARANJA, AZUL, BLANCO = "#FC7401", "#173748", "#FFFFFF"
 
 st.set_page_config(
     page_title="Huella de carbono - Flota Positiva",
     page_icon="🚗",
     layout="wide",
 )
+
+ESTILOS = """
+<style>
+.block-container { padding-top: 1.4rem; }
+
+/* Banner superior */
+.banner {
+    background: linear-gradient(100deg, #173748 0%, #1F4A63 70%, #2B6283 100%);
+    border-radius: 18px; padding: 20px 26px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 22px; color: #fff;
+    box-shadow: 0 4px 14px rgba(23, 55, 72, 0.28);
+    border-bottom: 5px solid #FC7401;
+}
+.banner img { height: 62px; background: #fff; border-radius: 12px; padding: 8px 16px; }
+.banner .bt { font-size: 1.85rem; font-weight: 700; line-height: 1.15; color: #fff; }
+.banner .bs { font-size: 1.0rem; margin-top: 4px; opacity: 0.93; color: #fff; }
+.banner .franja { height: 5px; width: 90px; border-radius: 3px; background: #FC7401; margin-top: 10px; }
+
+/* Tarjetas de métricas */
+[data-testid="stMetric"] {
+    background: rgba(23, 55, 72, 0.07);
+    border-left: 6px solid #FC7401;
+    border-radius: 12px; padding: 12px 16px;
+}
+
+/* Pestañas */
+button[data-baseweb="tab"] { font-weight: 600; }
+button[data-baseweb="tab"][aria-selected="true"] { color: #FC7401; }
+
+/* Etiqueta de nivel */
+.pill { display: inline-block; padding: 6px 18px; border-radius: 999px;
+        font-weight: 700; font-size: 1.05rem; }
+.pill-bajo  { background: #DCE6EC; color: #173748; border: 2px solid #173748; }
+.pill-medio { background: #173748; color: #ffffff; border: 2px solid #173748; }
+.pill-alto  { background: #FC7401; color: #ffffff; border: 2px solid #FC7401; }
+
+/* Marcador de posición de la foto */
+.foto-vacia {
+    background: linear-gradient(135deg, rgba(252,116,1,0.12), rgba(23,55,72,0.10));
+    border: 2px dashed #FC7401; border-radius: 14px; padding: 34px 12px;
+    text-align: center; font-weight: 600;
+}
+</style>
+"""
+st.markdown(ESTILOS, unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------
@@ -51,13 +98,43 @@ def fig_a_png(fig) -> bytes:
     return buf.getvalue()
 
 
+def logo_html() -> str:
+    """Logo en base64 para incrustarlo en el banner. Vacío si no se subió el archivo."""
+    ruta = hu.buscar_imagen(hu.LOGO)
+    if ruta is None:
+        return ""
+    b64 = base64.b64encode(ruta.read_bytes()).decode("ascii")
+    return f'<img src="data:{hu.MIME_IMG[ruta.suffix.lower()]};base64,{b64}" alt="Positiva Compañía de Seguros">'
+
+
+def mostrar_foto(linea: str, ancho: int = 440) -> None:
+    """Foto del vehículo de esa línea; si no se subió, un marcador de posición elegante."""
+    ruta = hu.buscar_imagen(hu.FOTOS[linea])
+    perfil = hu.PERFILES[linea]
+    if ruta is not None:
+        st.image(str(ruta), caption=f"{perfil['Marca']} {linea}", width=ancho)
+    else:
+        st.markdown(
+            f'<div class="foto-vacia">🚗 {perfil["Marca"]} {linea}</div>',
+            unsafe_allow_html=True,
+        )
+
+
 # --------------------------------------------------------------------------
 # Encabezado y barra lateral
 # --------------------------------------------------------------------------
-st.title("Huella de carbono de la flota de Positiva")
-st.caption(
-    "Estimación mensual de kg CO2e por vehículo a partir de sus características "
-    "técnicas y de uso, con un modelo Gradient Boosting."
+st.markdown(
+    f"""
+    <div class="banner">
+        {logo_html()}
+        <div>
+            <div class="bt">Huella de carbono de la flota de Positiva</div>
+            <div class="bs">Estimación mensual de kg CO2e por vehículo y análisis de qué la impulsa</div>
+            <div class="franja"></div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 with st.sidebar:
@@ -94,6 +171,7 @@ with tab_calc:
     with col_in:
         linea = st.selectbox("Línea del vehículo", list(hu.PERFILES), index=0)
         perfil = hu.PERFILES[linea]
+        mostrar_foto(linea)
         st.caption(
             f"Ficha técnica Fasecolda {perfil['fasecolda']}: {perfil['Marca']} {linea} · "
             f"{perfil['Clase'].title()} · caja {perfil['TIPO_CAJA'].lower()} · "
@@ -153,7 +231,11 @@ with tab_calc:
             delta_color="inverse",
         )
         m3, m4 = st.columns(2)
-        m3.metric("Nivel frente a la flota", nivel)
+        m3.markdown("**Nivel frente a la flota**")
+        m3.markdown(
+            f'<span class="pill pill-{nivel.lower()}">{nivel}</span>',
+            unsafe_allow_html=True,
+        )
         m4.metric("Si se mantiene todo el año", f"{pred * 12 / 1000:,.2f} t CO2e")
         st.caption(
             "El nivel compara contra la distribución histórica de la flota "
@@ -169,11 +251,13 @@ with tab_calc:
         y_barrido = hu.predecir(modelo, barrido)
 
         fig1, ax1 = plt.subplots(figsize=(6, 3.2))
-        ax1.plot(rango / 1000, y_barrido, color=VERDE, linewidth=2)
-        ax1.scatter([km / 1000], [pred], color=NARANJA, zorder=3, s=60, label="Vehículo actual")
+        ax1.plot(rango / 1000, y_barrido, color=AZUL, linewidth=2.5)
+        ax1.fill_between(rango / 1000, y_barrido, color=AZUL, alpha=0.10)
+        ax1.scatter([km / 1000], [pred], color=NARANJA, zorder=3, s=80,
+                    edgecolor="white", linewidth=1.5, label="Vehículo actual")
         ax1.set_xlabel("Kilometraje del odómetro (miles de km)")
         ax1.set_ylabel("kg CO2e / mes")
-        ax1.set_title("¿Cómo cambia la huella con el kilometraje?")
+        ax1.set_title("¿Cómo cambia la huella con el kilometraje?", color=AZUL, fontweight="bold")
         ax1.legend(frameon=False)
         ax1.spines[["top", "right"]].set_visible(False)
         st.pyplot(fig1)
@@ -187,9 +271,9 @@ with tab_calc:
         comp = pd.DataFrame(filas, columns=["Linea", "kg_co2e"])
         fig2, ax2 = plt.subplots(figsize=(6, 2.6))
         ax2.bar(comp["Linea"], comp["kg_co2e"],
-                color=[NARANJA if l == linea else VERDE for l in comp["Linea"]])
+                color=[NARANJA if l == linea else AZUL for l in comp["Linea"]])
         ax2.set_ylabel("kg CO2e / mes")
-        ax2.set_title("Mismo uso con distintos perfiles de vehículo")
+        ax2.set_title("Mismo uso con distintos perfiles de vehículo", color=AZUL, fontweight="bold")
         ax2.spines[["top", "right"]].set_visible(False)
         st.pyplot(fig2)
         plt.close(fig2)
@@ -202,10 +286,19 @@ with tab_flota:
     top = ranking.iloc[0]
 
     st.subheader("¿Qué vehículo tiene la huella más alta?")
-    k1, k2, k3 = st.columns(3)
-    k1.metric("Vehículo con mayor huella acumulada", top["CODIGO_VEHICULO"])
-    k2.metric("Huella acumulada 2021-2025", f"{top['huella_total'] / 1000:,.1f} t CO2e")
-    k3.metric("Promedio mensual", f"{top['huella_promedio_mensual']:,.0f} kg CO2e")
+    if top["Linea"] in hu.FOTOS and hu.buscar_imagen(hu.FOTOS[top["Linea"]]) is not None:
+        c_foto, c_kpi = st.columns([1, 2])
+        with c_foto:
+            mostrar_foto(top["Linea"], ancho=300)
+        kpi_zona = c_kpi
+    else:
+        kpi_zona = st.container()
+
+    with kpi_zona:
+        k1, k2, k3 = st.columns(3)
+        k1.metric("Vehículo con mayor huella acumulada", top["CODIGO_VEHICULO"])
+        k2.metric("Huella acumulada 2021-2025", f"{top['huella_total'] / 1000:,.1f} t CO2e")
+        k3.metric("Promedio mensual", f"{top['huella_promedio_mensual']:,.0f} kg CO2e")
     st.write(
         f"El **{top['Marca']} {top['Linea']}** `{top['CODIGO_VEHICULO']}` encabeza el ranking. "
         f"Su residuo promedio es **{top['residuo_promedio']:+.0f} kg CO2e/mes**: "
@@ -216,11 +309,11 @@ with tab_flota:
 
     fig3, ax3 = plt.subplots(figsize=(9, 5))
     orden = ranking.sort_values("huella_total")
-    colores = [NARANJA if v == top["CODIGO_VEHICULO"] else VERDE for v in orden["CODIGO_VEHICULO"]]
+    colores = [NARANJA if v == top["CODIGO_VEHICULO"] else AZUL for v in orden["CODIGO_VEHICULO"]]
     ax3.barh(orden["CODIGO_VEHICULO"] + "  (" + orden["Linea"] + ")",
              orden["huella_total"] / 1000, color=colores)
     ax3.set_xlabel("Huella acumulada 2021-2025 (t CO2e)")
-    ax3.set_title("Ranking de huella de carbono por vehículo")
+    ax3.set_title("Ranking de huella de carbono por vehículo", color=AZUL, fontweight="bold")
     ax3.spines[["top", "right"]].set_visible(False)
     st.pyplot(fig3)
     st.download_button("Descargar gráfico (PNG)", fig_a_png(fig3),
@@ -249,11 +342,13 @@ with tab_flota:
         "POTENCIA_HP": "Potencia", "TIPO_CAJA": "Tipo de caja", "humedad_prom": "Humedad",
     }
     top_imp = imp.head(8).iloc[::-1]
+    # La variable dominante en rosado, el resto en morado
+    colores_imp = [NARANJA if i == len(top_imp) - 1 else AZUL for i in range(len(top_imp))]
     fig4, ax4 = plt.subplots(figsize=(8, 4))
     ax4.barh(top_imp["variable"].map(lambda v: etiquetas.get(v, v)),
-             top_imp["importancia"] * 100, color=VERDE)
+             top_imp["importancia"] * 100, color=colores_imp)
     ax4.set_xlabel("Importancia (%)")
-    ax4.set_title("Variables que más explican la huella (modelo final)")
+    ax4.set_title("Variables que más explican la huella (modelo final)", color=AZUL, fontweight="bold")
     ax4.spines[["top", "right"]].set_visible(False)
     st.pyplot(fig4)
     plt.close(fig4)
@@ -270,11 +365,13 @@ with tab_flota:
     dv = datos_oof[datos_oof["CODIGO_VEHICULO"] == veh].sort_values(["anio", "mes"])
     fechas = pd.to_datetime(dict(year=dv["anio"], month=dv["mes"], day=1))
     fig5, ax5 = plt.subplots(figsize=(9, 3.6))
-    ax5.plot(fechas, dv[hu.TARGET], color=NARANJA, linewidth=1.8, label="Huella real")
-    ax5.plot(fechas, dv["esperado_oof"], color=VERDE, linewidth=1.8, linestyle="--",
+    ax5.plot(fechas, dv[hu.TARGET], color=NARANJA, linewidth=2, label="Huella real")
+    ax5.plot(fechas, dv["esperado_oof"], color=AZUL, linewidth=2, linestyle="--",
              label="Esperada por el modelo")
+    ax5.fill_between(fechas, dv[hu.TARGET], dv["esperado_oof"], color=AZUL, alpha=0.10,
+                     label="Diferencia")
     ax5.set_ylabel("kg CO2e / mes")
-    ax5.set_title(f"{veh}: huella mensual real vs esperada")
+    ax5.set_title(f"{veh}: huella mensual real vs esperada", color=AZUL, fontweight="bold")
     ax5.legend(frameon=False)
     ax5.spines[["top", "right"]].set_visible(False)
     st.pyplot(fig5)

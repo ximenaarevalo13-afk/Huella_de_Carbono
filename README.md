@@ -28,8 +28,26 @@ metadatos.json             # Hiperparámetros, métricas y versión de scikit-le
 tabla_modelado.csv         # Tabla de modelado (14 vehículos x 60 meses)
 plantilla_lote.csv         # Ejemplo de archivo para el cálculo por lotes
 requirements.txt           # Dependencias
+logo_positiva.png          # Logo del banner
+foto_*.jpg                 # Fotos de los vehículos (Versa, Tiida, D22/NP300, Optima)
 README.md                  # Este archivo
 ```
+
+## Personalización: logo y fotos de los vehículos
+
+La app usa los colores corporativos de Positiva: naranja `#FC7401`, azul oscuro `#173748` y blanco. El logo y las fotos son **opcionales**: si el archivo existe en el repositorio, aparece; si no, la app funciona igual con un marcador de posición.
+
+Sube estas imágenes **a la raíz del repositorio** con estos nombres (la extensión puede ser `.png`, `.jpg`, `.jpeg`, `.webp`; el logo también `.svg`):
+
+| Archivo | Dónde se muestra |
+|---|---|
+| `logo_positiva` | Banner superior |
+| `foto_versa` | Calculadora al elegir Versa |
+| `foto_tiida` | Calculadora al elegir Tiida |
+| `foto_d22_np300` | Calculadora al elegir D22/NP300 (y en "Flota y causas" si es el vehículo con mayor huella) |
+| `foto_optima` | Calculadora al elegir Optima |
+
+Recomendación: fotos de menos de 1 MB (por ejemplo 1200 px de ancho) para que la app cargue rápido.
 
 ## Ejecutar en tu computador
 
